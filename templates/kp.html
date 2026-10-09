@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="steps">
+  <span class="step done">1. Загрузить заявку</span>
+  <span class="step done">2. Проверить данные</span>
+  <span class="step active">3. Расчёт</span>
+  <span class="step">4. Коммерческое предложение</span>
+</div>
+
+<div class="card">
+  <h2>Расчёт: заявка № {{ order.id }}</h2>
+  {% if order.calc.unknown_materials %}
+  <div class="flash flash-warn">Материалов не нашлось в прайсе, цена по ним пока 0:
+    {{ order.calc.unknown_materials | join(', ') }}. Скажите администратору, чтобы
+    добавил их в прайс — потом достаточно вернуться к проверке и пересчитать.</div>
+  {% endif %}
+  {% if order.calc.unknown_operations %}
+  <div class="flash flash-warn">Операций нет в прайсе, цена по ним пока 0:
+    {{ order.calc.unknown_operations | join(', ') }}. Аналогично: добавить в прайс →
+    вернуться к проверке → пересчитать.</div>
+  {% endif %}
+
+  <table class="tbl">
+    <tr><th>№</th><th>Наименование</th><th>Материал</th><th>Размер</th>
+        <th>Кол-во</th><th>Материал, ₽</th><th>Сумма, ₽</th></tr>
+    {% for item in order['calc']['items'] %}
+    <tr>
+      <td>{{ item.number }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.material }}</td>
+      <td>{{ item.size }}</td>
+      <td>{{ item.count }}</td>
+      <td>{{ '%.0f' | format(item.material_cost) }}</td>
+      <td>{{ '%.0f' | format(item.subtotal) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <p class="total">Доставка и прочие расходы: {{ '%.0f' | format(order.calc.delivery) }} ₽</p>
+  <p class="total total-big">ИТОГО к предложению клиенту: {{ '%.0f' | format(order.calc.total) }} ₽</p>
+
+  <div class="row">
+    <a class="btn big" href="/kp/{{ order.id }}/doc">→ Коммерческое предложение</a>
+    <a class="btn secondary" href="/review/{{ order.id }}">Исправить данные</a>
+    <a class="btn secondary" href="/">Новая заявка</a>
+  </div>
+  <p class="hint">На следующем экране — готовый текст КП, таблица и кнопки:
+  Word, Excel, отправка почтой, печать и чаты Telegram/VK.</p>
+</div>
+{% endblock %}

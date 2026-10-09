@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="steps">
+  <span class="step done">1. Заявка поступила</span>
+  <span class="step active">2. Проверить и уточнить</span>
+  <span class="step">3. Расчёт</span>
+  <span class="step">4. Коммерческое предложение</span>
+</div>
+
+<div class="card">
+  <h2>Заказчик</h2>
+  {% if order.contact_channel %}
+  <p>
+    Канал связи: <b>{{ order.contact_channel }}</b>.
+    {% if order.contact_kind == 'email' %}
+      Реквизиты: <a href="mailto:{{ order.contact_value }}"><b>{{ order.contact_value }}</b></a>
+    {% elif order.contact_kind == 'phone' %}
+      Реквизиты: <a href="tel:{{ order.contact_value | replace(' ', '') }}"><b>{{ order.contact_value }}</b></a>
+    {% elif order.contact_kind == 'chat' %}
+      Реквизиты: <b>переписка {{ order.contact_channel }}</b> — ответ можно написать прямо ниже, уйдёт в тот же чат.
+    {% else %}
+      Реквизиты: <b>{{ order.contact_value }}</b>
+    {% endif %}
+  </p>
+  {% if order.contact_kind != 'chat' %}
+  <form method="post" action="/reply/{{ order.id }}" class="reply-form">
+    <label>Ваш вопрос заказчику (для почты и телефона — текст письма/подготовленного вопроса)
+      <textarea name="message" rows="3" placeholder="Например: уточните, пожалуйста, материал по позиции 2..."></textarea>
+    </label>
+    <button type="submit" class="secondary">Написать заказчику ✉</button>
+  </form>
+  <p class="hint">Прямой отправки по этому каналу нет — реквизиты выше можно
+  скопировать и связаться любым способом.</p>
+  {% endif %}
+  {% else %}
+  <p class="hint">Заказчик не оставил контакт. Реквизиты уточните у того, кто прислал документ.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Проверьте, что распознано верно</h2>
+  <p class="hint">Заявка № {{ order.id }} из файла «{{ order.filename }}».
+  Поля, выделенные жёлтым, не распознались однозначно — впишите их вручную
+  или спросите заказчика (его контакты в карточке выше).</p>
+
+  {% if order.raw_text %}
+  <details class="raw">
+    <summary>Копия заявки, как её прислали</summary>
+    <pre>{{ order.raw_text[:2000] }}</pre>
+  </details>
+  {% endif %}
+
+  <form method="post">
+    {% for position in order.params %}
+    <div class="position">
+      <h3>Позиция {{ loop.index }}: {{ position.name or '(название не распознано)' }}</h3>
+      <label>Наименование
+        <input type="text" name="pos{{ loop.index0 }}_name" value="{{ position.name }}">
+      </label>
+      <label>Материал
+        <input type="text" name="pos{{ loop.index0 }}_material"
+               value="{{ position.material }}"
+               {% if not position.material %}data-doubt="1"{% endif %}>
+      </label>
+      <div class="row">
+        <label>Размер / габарит
+          <input type="text" name="pos{{ loop.index0 }}_size" value="{{ position.size }}">
+        </label>
+        <label>Количество
+          <input type="number" name="pos{{ loop.index0 }}_count" value="{{ position.count }}"
+                 min="0" {% if not position.count %}data-doubt="1"{% endif %}>
+        </label>
+      </div>
+      <label>Что нужно сделать с деталью (через запятую: резка, сварка...)
+        <input type="text" name="pos{{ loop.index0 }}_operations"
+               {% if not position.operations %}data-doubt="1"{% endif %}
+               value="{{ position.operations | join(', ') }}">
+      </label>
+    </div>
+    {% endfor %}
+    <button type="submit" class="big">Неясности убраны, на расчёт →</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+# Секреты и личные данные
+.env
+
+# Окружение Python
+venv/
+
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Данные работы системы (заявки клиентов, документы)
+data/app.db
+data/uploads/
+data/kp/
+data/tmp/
+data/templates/
+data/secret_key.txt

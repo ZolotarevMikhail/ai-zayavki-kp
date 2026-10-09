@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Проверка загруженного прайса</h2>
+  {% if preview.has_changes %}
+  <p class="hint">Файл прочитан. Проверьте список: до нажатия кнопки
+  действующий прайс не меняется.</p>
+  <p><b>Появятся: {{ preview.counts['новый'] }}</b>,
+  изменятся: {{ preview.counts['изменится'] }},
+  уберутся: {{ preview.counts['уберётся'] }}.</p>
+  <table class="tbl">
+    <tr>
+      <th>Раздел</th><th>Название</th><th>Что станет</th>
+      <th>Было</th><th>Станет</th>
+    </tr>
+    {% for row in preview.rows %}
+    <tr>
+      <td>{{ row.section }}</td>
+      <td>{{ row.name }}</td>
+      <td>{{ row.status }}</td>
+      <td>{{ row.old }}</td>
+      <td>{{ row.new }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="/price/apply" class="row">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit" class="big">Применить этот прайс</button>
+    <a class="btn secondary" href="/price">Отменить</a>
+  </form>
+  {% else %}
+  <p>Файл совпадает с действующим прайсом — менять нечего.
+  <a href="/price">Вернуться к прайсу</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

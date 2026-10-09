@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Заявки → КП</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23fbcf02'/></svg>">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Заявки → КП</h1>
+      {% if demo_mode %}<span class="badge badge-demo">Демо-режим: распознавание на примере, без ИИ и расходов</span>
+      {% else %}<span class="badge badge-live">Реальный режим: распознавание через ИИ</span>{% endif %}
+      {% if passwords_on %}
+        {% if role == 'admin' %}<a class="btn small" href="/price">💰 Прайс</a>
+        <span class="badge">руководитель</span>
+        {% elif role == 'staff' %}<span class="badge">сотрудник</span>{% endif %}
+        <a class="hint" href="/logout">Выйти</a>
+      {% else %}
+        <a class="btn small" href="/price">💰 Прайс</a>
+      {% endif %}
+    </header>
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

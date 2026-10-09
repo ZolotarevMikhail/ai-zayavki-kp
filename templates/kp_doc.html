@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="steps no-print">
+  <span class="step done">1. Загрузить заявку</span>
+  <span class="step done">2. Проверить данные</span>
+  <span class="step done">3. Расчёт</span>
+  <span class="step active">4. Коммерческое предложение</span>
+</div>
+
+<div class="card print-area">
+  <h2>Коммерческое предложение № {{ order.id }}</h2>
+  <p class="hint no-print">Полюбуйтесь текстом и таблицей: именно это получит
+  заказчик. Всё верно — отправляйте кнопками ниже.</p>
+  <pre class="kp-text">{{ document.text }}</pre>
+</div>
+
+<div class="card print-area">
+  <h2>Таблица КП</h2>
+  <table class="tbl">
+    <tr><th>№</th><th>Наименование</th><th>Материал</th><th>Размер</th>
+        <th>Кол-во</th><th>Работы</th><th>Цена, ₽</th></tr>
+    {% for item in order['calc']['items'] %}
+    <tr>
+      <td>{{ item.number }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.material | default('—') }}</td>
+      <td>{{ item.size | default('—') }}</td>
+      <td>{{ item.count }}</td>
+      <td>
+        {% if item.operations %}
+          {{ item.operations | join(', ') }}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ '%.0f' | format(item.subtotal) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="total">Доставка и прочие расходы:
+    {{ '%.0f' | format(order.calc.delivery) }} ₽</p>
+  <p class="total total-big">ИТОГО:
+    {{ '%.0f' | format(order.calc.total) }} ₽</p>
+</div>
+
+<div class="row no-print">
+  <a class="btn" href="/kp/{{ order.id }}/download">⬇ Word</a>
+  <a class="btn" href="/kp/{{ order.id }}/excel">⬇ Excel</a>
+  <button id="send-email-btn" class="btn">✉ Отправить</button>
+  <button id="print-btn" class="btn">🖨 Распечатать</button>
+  <form method="post" action="/kp/{{ order.id }}/send">
+    <input type="hidden" name="channel" value="telegram">
+    <button type="submit" class="secondary">✈ Отправить в Telegram</button>
+  </form>
+  <form method="post" action="/kp/{{ order.id }}/send">
+    <input type="hidden" name="channel" value="vk">
+    <button type="submit" class="secondary">✈ Отправить в ВКонтакте</button>
+  </form>
+  <a class="btn secondary" href="/">Новая заявка</a>
+</div>
+
+<dialog id="email-dialog" class="modal-dialog">
+  <div class="modal-head">
+    <h2>Отправка по почте</h2>
+    <button id="email-close" class="btn small secondary">Закрыть ✕</button>
+  </div>
+  {% if smtp_ready %}
+  <p class="hint">Письмо уйдёт из вашего ящика: тема и текст готовы,
+  файлы Word и Excel приложатся автоматически.</p>
+  <form method="post" action="/kp/{{ order.id }}/send_email" id="email-form">
+    <label>Кому
+      <input type="text" name="to"
+             value="{{ order.contact_value if order.contact_kind == 'email' else '' }}">
+    </label>
+    <label>Тема
+      <input type="text" name="subject"
+             value="Коммерческое предложение № {{ order.id }}">
+    </label>
+    <label>Текст письма
+      <textarea name="body" rows="10">{{ document.text }}</textarea>
+    </label>
+    <button type="submit" class="btn big">Отправить письмо с файлами ✉</button>
+  </form>
+  {% else %}
+  <p class="hint">Текст письма уже готов и виден целиком. Кнопка снизу
+  откроет вашу почтовую программу с готовым письмом. Файлы Word и Excel
+  прикрепите к письму после скачивания кнопками Word и Excel.</p>
+  <label>Кому
+    <input type="text" id="email-to"
+           value="{{ order.contact_value if order.contact_kind == 'email' else '' }}">
+  </label>
+  <label>Тема
+    <input type="text" id="email-subject"
+           value="Коммерческое предложение № {{ order.id }}">
+  </label>
+  <label>Текст письма
+    <textarea id="email-body" rows="10">{{ document.text }}</textarea>
+  </label>
+  <button type="button" id="email-open" class="btn big">
+    Открыть почтовую программу ✉
+  </button>
+  {% endif %}
+</dialog>
+
+<script>
+document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+// Отправка по почте, пока SMTP не настроен: письмо собирается здесь и
+// открывается в почтовую программу оператора (адрес, тема, текст готовы).
+const emailDialog = document.getElementById('email-dialog');
+document.getElementById('send-email-btn').addEventListener('click', () => emailDialog.showModal());
+document.getElementById('email-close').addEventListener('click', () => emailDialog.close());
+const openMailProgram = document.getElementById('email-open');
+if (openMailProgram) {
+  openMailProgram.addEventListener('click', () => {
+    const to = document.getElementById('email-to').value.trim();
+    if (!to.includes('@')) {
+      alert('Впишите адрес почты заказчика в поле «Кому».');
+      return;
+    }
+    const subject = encodeURIComponent(
+      document.getElementById('email-subject').value);
+    const body = encodeURIComponent(
+      document.getElementById('email-body').value);
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    emailDialog.close();
+  });
+}
+</script>
+{% endblock %}

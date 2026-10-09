@@ -1,0 +1,11 @@
+# Зависимости проекта «Заявки → КП»
+flask>=3.0
+python-docx>=1.1
+docxtpl>=0.16
+openpyxl>=3.1
+pdfplumber>=0.11
+requests>=2.31
+python-dotenv>=1.0
+
+# Проверка качества кода
+flake8>=7.0

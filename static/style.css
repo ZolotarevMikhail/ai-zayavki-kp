@@ -1,0 +1,276 @@
+/* Стиль системы «Заявки → КП».
+   Правила интерфейса записаны в скилле kp-interface: одна палитра
+   на токенах, главный счётчик крупно, действия на месте, один набор
+   кнопок, поля не ниже 40 px, фокус всегда виден. */
+:root {
+  --bg: #f9f9f9;
+  --surface: #ffffff;
+  --zebra: #fafafa;
+  --ink: #151515;
+  --muted: #6b6b6b;
+  --line: #e3e3e3;
+  --accent: #fbcf02;
+  --accent-soft: #fffbe0;
+  --ok: #e6f6e6;
+  --ok-ink: #1d5c2a;
+  --warn: #fff3c4;
+  --warn-ink: #6b5a00;
+  --radius: 6px;
+  --gap: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1c1c;
+    --surface: #242424;
+    --zebra: #2a2a2a;
+    --ink: #f2f2f2;
+    --muted: #a0a0a0;
+    --line: #3a3a3a;
+    --accent-soft: #453c00;
+    --ok: #143018;
+    --ok-ink: #9fe0b0;
+    --warn: #443c00;
+    --warn-ink: #ffe97a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Montserrat, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
+.wrap.narrow { max-width: 560px; }
+
+/* Шапка: имя системы, режим, роль */
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+h1 { font-size: 22px; margin: 0; }
+h2 { font-size: 19px; margin-top: 0; }
+h3 { font-size: 16px; margin: 0 0 12px; }
+
+/* Карточка — основной контейнер смысла: одна секция = одна задача */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.card.center { text-align: center; }
+.card.narrow { max-width: 480px; margin: 48px auto; }
+
+.badge {
+  display: inline-block;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.badge-demo { background: var(--warn); }
+.badge-live { background: var(--ok); }
+.badge-wait { background: var(--accent-soft); font-weight: 600; }
+.badge-ok { background: var(--ok); color: var(--ok-ink); }
+
+/* Сообщения системы: слева плотная полоса — видно краем глаза */
+.flash {
+  background: var(--warn);
+  color: var(--warn-ink);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+/* Шаги конвейера: готовые — зелёные с галочкой, текущий — тёмный */
+.steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.step {
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: var(--muted);
+  background: var(--surface);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+.step.active { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+.step.done { background: var(--ok); color: var(--ok-ink); border-color: transparent; }
+.step.done::before { content: "✓ "; }
+
+/* Главный экран: что важно сегодня — число заявок на проверке */
+.hero { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.hero-number {
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 72px;
+  text-align: center;
+}
+.hero-text { flex: 1 1 220px; }
+.hero-text h2 { margin-bottom: 4px; }
+.hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-buttons button, .hero-buttons .btn { margin-top: 0; }
+
+/* Кнопки: один акцентный жёлтый, всё остальное белое */
+button, .btn {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius);
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  margin-top: 12px;
+  min-height: 44px;
+}
+button.big, .btn.big { font-size: 18px; padding: 16px 32px; }
+button.secondary, .btn.secondary { background: var(--surface); border: 1px solid var(--line); }
+.btn.small { padding: 6px 12px; font-size: 14px; margin: 0; min-height: 32px; }
+button:hover, .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(21, 21, 21, 0.12); }
+button:active, .btn:active { transform: none; box-shadow: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+label { display: block; margin-bottom: 12px; font-size: 14px; }
+input[type="text"], input[type="password"], input[type="number"], textarea {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  min-height: 42px;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  margin-top: 4px;
+}
+input:focus, textarea:focus { border-color: var(--accent); }
+input[data-doubt="1"] {
+  border: 2px solid #d9a400;
+  background: var(--accent-soft);
+}
+
+/* Верхний пояс действий оператора */
+.actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.action-button {
+  flex: 1 1 260px;
+  font-size: 19px;
+  padding: 22px 24px;
+  margin: 0;
+}
+.action-button.inbox { background: var(--surface); border: 1px solid var(--line); }
+.action-button.inbox.attention { background: var(--accent); border: none; }
+
+/* Окна поверх страницы (заявки, отправка почты) */
+.modal-dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 720px;
+  width: 92%;
+  background: var(--surface);
+  color: var(--ink);
+}
+.modal-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.inbox-row td { cursor: pointer; }
+.inbox-row:hover td { background: var(--accent-soft); }
+
+/* Строки проверки заявок */
+.position {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.row label { flex: 1 1 200px; }
+.row button, .row .btn { margin-top: 0; }
+
+textarea {
+  max-width: 640px;
+  resize: vertical;
+}
+
+/* Зона перетаскивания файла */
+.dropzone {
+  display: block;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 17px;
+}
+.dropzone.hover, .dropzone:hover { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone input { display: none; }
+
+.raw pre {
+  white-space: pre-wrap;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 13px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+/* Таблицы данных: полосатые строки, подсветка строки под мышью */
+.tbl { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.tbl th, .tbl td { border: 1px solid var(--line); padding: 8px 10px; font-size: 14px; text-align: left; }
+.tbl th { background: var(--bg); font-weight: 600; }
+.tbl tr:nth-child(even):not(:first-child) td { background: var(--zebra); }
+.tbl tr:hover td { background: var(--accent-soft); }
+.tbl .btn { margin: 0; }
+
+.total { font-size: 16px; margin: 8px 0 0; }
+.total-big { font-size: 22px; font-weight: 700; }
+.hint { font-size: 14px; color: var(--muted); }
+
+/* Текст КП — как документ: шрифт с засечками, читается как письмо */
+.kp-text {
+  white-space: pre-wrap;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.65;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* Печать: бумага получает только текст КП и таблицу */
+@media print {
+  header, .steps, .no-print, .flash { display: none !important; }
+  body { background: #fff; color: #000; }
+  .card { background: #fff; border: none; padding: 0 0 12px; overflow: visible; }
+  .kp-text { background: #fff; border: none; padding: 0; }
+  .tbl th { background: #eee; }
+  .tbl tr:nth-child(even):not(:first-child) td { background: #f6f6f6; }
+}
+
+/* Телефон: главные действия во всю ширину, таблицы скроллятся в карточке */
+@media (max-width: 640px) {
+  .action-button { flex: 1 1 100%; }
+  .hero-buttons button, .hero-buttons .btn { flex: 1 1 100%; }
+  header { gap: 8px; }
+}

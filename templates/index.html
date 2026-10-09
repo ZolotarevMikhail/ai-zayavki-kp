@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card hero">
+  <div class="hero-number">{{ pending_count }}</div>
+  <div class="hero-text">
+    <h2>{% if pending_count %}Ждут проверки{% else %}Новых заявок нет{% endif %}</h2>
+    <p class="hint">из почты, Telegram, ВКонтакте и формы сайта</p>
+  </div>
+  <div class="hero-buttons">
+    <button id="inbox-button" class="btn{% if pending_count %} attention{% endif %}">
+      📨 Открыть заявки{% if pending_count %} · {{ pending_count }}{% endif %}
+    </button>
+    <button id="quick-upload" class="btn secondary">📄 Загрузить документ</button>
+  </div>
+</div>
+
+<dialog id="inbox-dialog" class="modal-dialog">
+  <div class="modal-head">
+    <h2>Поступившие заявки</h2>
+    <button id="inbox-close" class="btn small secondary">Закрыть</button>
+  </div>
+  {% if pending %}
+  <table class="tbl">
+    <tr><th>№</th><th>Откуда</th><th>Контакт</th><th>Кратко</th></tr>
+    {% for order in pending %}
+    <tr class="inbox-row">
+      <td><a href="/review/{{ order.id }}">{{ order.id }}</a></td>
+      <td>{{ order.channel }}</td>
+      <td>{{ order.contact_value or '—' }}</td>
+      <td>{{ order.filename }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="hint">Новых заявок нет. Кнопка подсветится жёлтым, когда что-то
+  придёт из почты, мессенджеров или с сайта.</p>
+  {% endif %}
+</dialog>
+
+<div class="card">
+  <h2>Каналы приёма заявок</h2>
+  <table class="tbl">
+    <tr><th>Канал</th><th>Как работает</th><th>Состояние</th></tr>
+    <tr><td>Сайт компании</td><td>Публичная форма <a href="/new">/new</a> и программная отправка по ключу</td>
+        <td><span class="badge badge-ok">включён</span></td></tr>
+    <tr><td>Почта</td><td>Вложения из непрочитанных писем IMAP-ящика</td>
+        <td><span class="badge {{ 'badge-ok' if imap_ready }}">{{ 'включён' if imap_ready else 'не настроен' }}</span></td></tr>
+    <tr><td>Telegram</td><td>Бот принимает сообщения, создаёт заявку, отвечает номером</td>
+        <td><span class="badge {{ 'badge-ok' if telegram_ready }}">{{ 'включён' if telegram_ready else 'не настроен' }}</span></td></tr>
+    <tr><td>ВКонтакте</td><td>Бот сообщества принимает сообщения, создаёт заявку, отвечает номером</td>
+        <td><span class="badge {{ 'badge-ok' if vk_ready }}">{{ 'включён' if vk_ready else 'не настроен' }}</span></td></tr>
+  </table>
+  <p class="hint">Каналы включаются в файле .env: почта (IMAP_HOST, IMAP_USER,
+  IMAP_PASSWORD), Telegram (TELEGRAM_BOT_TOKEN), VK (VK_ACCESS_TOKEN, VK_GROUP_ID),
+  ключ для сайта (API_KEY). Боты Telegram и VK запускаются командой
+  <b>venv/bin/python run_channels.py</b>.</p>
+  <form action="/email/fetch" method="post">
+    <button type="submit" class="secondary">Проверить почту</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Документ заявки</h2>
+  <p class="hint">Текст, PDF, таблица Excel, документ Word или фотография.
+  После выбора файла обработка запускается сама.</p>
+  <label class="dropzone" id="dropzone">
+    <span id="dropzone-text">📄 Выберите файл или перетащите сюда</span>
+    <input type="file" name="file" id="file-input" form="upload-form">
+  </label>
+  <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data"></form>
+</div>
+
+<div class="card">
+  <h2>История заявок</h2>
+  {% if orders %}
+  <table class="tbl">
+    <tr><th>№</th><th>Дата</th><th>Откуда</th><th>Файл</th><th>Что с ней</th><th></th></tr>
+    {% for order in orders %}
+    <tr>
+      <td>{{ order.id }}</td>
+      <td>{{ order.created_at[:16] }}</td>
+      <td>{{ order.channel }}</td>
+      <td>{{ order.filename }}</td>
+      <td><span class="badge {{ 'badge-wait' if order.status == 'на проверке' else 'badge-ok' }}">{{ order.status }}</span></td>
+      <td><a class="btn small secondary" href="/review/{{ order.id }}">Открыть</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="hint">Заявок пока нет. Для пробного прогона загрузите файл
+  <b>sample_zayavka.txt</b> из папки demo.</p>
+  {% endif %}
+</div>
+
+<script>
+// Кнопка загрузки: окно выбора файла открывается сразу, после выбора
+// документа обработка запускается сама.
+const quickUpload = document.getElementById('quick-upload');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const dropzoneText = document.getElementById('dropzone-text');
+quickUpload.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (event) => { event.preventDefault(); dropzone.classList.add('hover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('hover'));
+dropzone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  dropzone.classList.remove('hover');
+  if (event.dataTransfer.files.length) {
+    fileInput.files = event.dataTransfer.files;
+    dropzoneText.textContent = '📁 ' + event.dataTransfer.files[0].name;
+  }
+});
+fileInput.addEventListener('change', () => {
+  if (!fileInput.files.length) return;
+  dropzoneText.textContent = '📁 ' + fileInput.files[0].name;
+  document.getElementById('upload-form').submit();
+});
+
+// Кнопка «Заявки»: окно поступивших заявок.
+const dialog = document.getElementById('inbox-dialog');
+document.getElementById('inbox-button').addEventListener('click', () => dialog.showModal());
+document.getElementById('inbox-close').addEventListener('click', () => dialog.close());
+</script>
+{% endblock %}

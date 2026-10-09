@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Оставить заявку</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="wrap narrow">
+    <div class="card">
+      <h1>Оставить заявку</h1>
+      <p class="hint">Опишите заказ как получается — обработаем и посчитаем,
+      результат пришлём вам. Обязательно оставьте контакт, чтобы мы могли уточнить детали.</p>
+      <form method="post">
+        <label>Как к вам обращаться
+          <input type="text" name="client_name" placeholder="Иван">
+        </label>
+        <label>Телефон или электронная почта
+          <input type="text" name="client_contact" placeholder="+7 900 000-00-00" required>
+        </label>
+        <label>Что нужно сделать
+          <textarea name="description" rows="5" required
+            placeholder="Например: 10 изделий, материал AISI 304, нужны резка и сварка"></textarea>
+        </label>
+        <button type="submit" class="big">Отправить заявку →</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

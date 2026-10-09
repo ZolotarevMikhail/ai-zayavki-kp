@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card narrow">
+  <h2>Вход в систему</h2>
+  <p class="hint">Пароль выдаёт руководитель. Его же вводят на компьютерах
+  сотрудников.</p>
+  <form method="post">
+    <label>Пароль
+      <input type="password" name="password">
+    </label>
+    <button type="submit" class="big">Войти</button>
+  </form>
+</div>
+{% endblock %}

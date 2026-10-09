@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Прайс-лист</h2>
+  <p class="hint">Страница только для руководителей. Правьте цены здесь
+  и сохраняйте: расчёты новых заявок пойдут по этим цифрам. Последняя
+  пустая строка добавляет новый материал или работу.</p>
+  <form method="post">
+    <h3>Материалы</h3>
+    <table class="tbl">
+      <tr><th>Материал</th><th>Цена за единицу, ₽</th><th>Единица</th></tr>
+      {% set materials = price.materials %}
+      {% for name, info in materials.items() %}
+      <tr>
+        <td><input type="text" name="m_name_{{ loop.index0 }}" value="{{ name }}"></td>
+        <td><input type="text" name="m_price_{{ loop.index0 }}" value="{{ info.price_per_unit }}"></td>
+        <td><input type="text" name="m_unit_{{ loop.index0 }}" value="{{ info.unit }}"></td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td><input type="text" name="m_name_{{ materials | length }}" placeholder="новый материал"></td>
+        <td><input type="text" name="m_price_{{ materials | length }}" placeholder="0"></td>
+        <td><input type="text" name="m_unit_{{ materials | length }}" value="ед."></td>
+      </tr>
+    </table>
+
+    <h3>Работы</h3>
+    <table class="tbl">
+      <tr><th>Работа</th><th>Цена за штуку, ₽</th></tr>
+      {% set rates = price.rates %}
+      {% for name, value in rates.items() %}
+      <tr>
+        <td><input type="text" name="r_name_{{ loop.index0 }}" value="{{ name }}"></td>
+        <td><input type="text" name="r_value_{{ loop.index0 }}" value="{{ value }}"></td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td><input type="text" name="r_name_{{ rates | length }}" placeholder="новая работа"></td>
+        <td><input type="text" name="r_value_{{ rates | length }}" placeholder="0"></td>
+      </tr>
+    </table>
+
+    <div class="row">
+      <label>Наценка к стоимости, %
+        <input type="text" name="margin_percent" value="{{ margin_percent }}">
+      </label>
+      <label>Доставка за заявку, ₽
+        <input type="text" name="delivery" value="{{ price.delivery }}">
+      </label>
+    </div>
+    <button type="submit" class="big">Сохранить прайс</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Рабочие места (компьютеры сотрудников)</h2>
+  <form method="post" action="/price/seats">
+    <label>Сколько компьютеров могут работать одновременно
+      <input type="text" name="staff_seats" value="{{ seats }}">
+    </label>
+    <p class="hint">Сейчас вошло: {{ staff_now }}. Это число задаётся
+    заказчиком: сотрудники входят на своих компьютерах паролем, лишние
+    входы система не пускает.</p>
+    <button type="submit" class="secondary">Сохранить число мест</button>
+  </form>
+  <form method="post" action="/price/free_seats">
+    <button type="submit" class="secondary">Освободить все места сотрудников</button>
+  </form>
+  <p class="hint"><a href="/price/download">⬇ Скачать прайс-лист файлом</a>
+  (именно этот файл использует система).</p>
+</div>
+
+<div class="card">
+  <h2>Загрузить прайс из Excel</h2>
+  <p class="hint">Выгрузите прайс из бухгалтерии (1С, МойСклад и другие)
+  в файл Excel и загрузите здесь: система сама прочитает цены и сначала
+  покажет, что изменится. Новые цены заработают только после
+  подтверждения.</p>
+  <form method="post" action="/price/import" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx">
+    <button type="submit" class="secondary">Проверить файл</button>
+  </form>
+</div>
+{% endblock %}
