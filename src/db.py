@@ -137,12 +137,18 @@ def add_session(token: str, role: str) -> None:
 
 
 def session_role(token: str) -> str:
-    """Роль входа по его метке: admin, staff или пустая строка."""
+    """Роль входа по его метке: admin, staff или пустая строка.
+
+    Сессия живёт 30 дней со входа, дальше «пустая»: место сотрудника
+    не занято навсегда, а забытый вход не действует вечно.
+    """
     if not token:
         return ""
     connection = get_connection()
     row = connection.execute(
-        "SELECT role FROM sessions WHERE token = ?", (token,)
+        "SELECT role FROM sessions WHERE token = ?"
+        " AND created_at >= datetime('now', '-30 days')",
+        (token,)
     ).fetchone()
     connection.close()
     return row["role"] if row else ""

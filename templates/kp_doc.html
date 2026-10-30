@@ -74,10 +74,10 @@
     </label>
     <label>Тема
       <input type="text" name="subject"
-             value="Коммерческое предложение № {{ order.id }}">
+             value="{{ request.args.get('keep_subj') or ('Коммерческое предложение № ' ~ order.id) }}">
     </label>
     <label>Текст письма
-      <textarea name="body" rows="10">{{ document.text }}</textarea>
+      <textarea name="body" rows="10">{{ request.args.get('keep_body') or document.text }}</textarea>
     </label>
     <button type="submit" class="btn big">Отправить письмо с файлами ✉</button>
   </form>
@@ -91,10 +91,10 @@
   </label>
   <label>Тема
     <input type="text" id="email-subject"
-           value="Коммерческое предложение № {{ order.id }}">
+           value="{{ request.args.get('keep_subj') or ('Коммерческое предложение № ' ~ order.id) }}">
   </label>
   <label>Текст письма
-    <textarea id="email-body" rows="10">{{ document.text }}</textarea>
+    <textarea id="email-body" rows="10">{{ request.args.get('keep_body') or document.text }}</textarea>
   </label>
   <button type="button" id="email-open" class="btn big">
     Открыть почтовую программу ✉

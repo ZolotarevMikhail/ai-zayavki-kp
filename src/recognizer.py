@@ -6,6 +6,7 @@
 import base64
 import json
 import re
+import time
 from pathlib import Path
 
 from src.config import DEMO_MODE, PROXYAPI_KEY, RECOGNIZER_MODEL
@@ -91,6 +92,8 @@ def _recognize_ai(text: str, file_path: str) -> list:
     }
     last_error = None
     for attempt in range(3):  # ограниченное число попыток, не бесконечно
+        if attempt:
+            time.sleep(3)  # повторяемая ошибка: пауза, чтобы не долбить API
         try:
             response = requests.post(
                 API_URL,
@@ -101,6 +104,16 @@ def _recognize_ai(text: str, file_path: str) -> list:
             response.raise_for_status()
             answer = response.json()["choices"][0]["message"]["content"]
             return _parse_model_answer(answer)
+        except requests.HTTPStatusError as error:
+            status = error.response.status_code
+            if status in (400, 401, 403):
+                # ключ/запрос не изменятся при повторе: три платных вызова
+                # подряд на одну и ту же ошибку — выбрасываем сразу.
+                raise RuntimeError(
+                    f"ИИ не принял запрос (HTTP {status}):"
+                    " проверьте ключ ProxyAPI и формат заявки"
+                ) from error
+            last_error = error  # 429/5xx — повторяемая, ждём и пробуем опять
         except Exception as error:  # noqa: BLE001 — покажем пользователю
             last_error = error
     raise RuntimeError(f"ИИ-распознавание не удалось: {last_error}")
@@ -110,8 +123,14 @@ def _build_message_content(text: str, file_path: str) -> list:
     """Текст отправляем строкой, картинку — блоком с base64."""
     if text:
         return [{"type": "text", "text": f"Заявка:\n{text}"}]
-    encoded = base64.b64encode(Path(file_path).read_bytes()).decode("utf-8")
     suffix = Path(file_path).suffix.lstrip(".").lower()
+    if suffix not in ("png", "jpg", "jpeg", "webp"):
+        # Пустой .txt/.pdf — не картинка: API-400 на image/txt не допускаем.
+        raise ValueError(
+            "В файле не нашлось текста заявки."
+            " Напишите заявку текстом или пришлите фото."
+        )
+    encoded = base64.b64encode(Path(file_path).read_bytes()).decode("utf-8")
     media_type = f"image/{'jpeg' if suffix in ('jpg', 'jpeg') else suffix}"
     return [
         {"type": "text",

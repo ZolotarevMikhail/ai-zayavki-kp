@@ -44,6 +44,10 @@ def run_forever() -> None:
             print(f"Telegram: сеть не отвечает ({error}),"
                   f" пауза {RECONNECT_PAUSE} с")
             time.sleep(RECONNECT_PAUSE)
+        except Exception as error:  # noqa: BLE001 — сбой одной заявки не роняет бот
+            print(f"Telegram: сбой обработки ({error}),"
+                  f" пауза {RECONNECT_PAUSE} с")
+            time.sleep(RECONNECT_PAUSE)
 
 
 def _handle_update(update: dict) -> None:
@@ -55,9 +59,15 @@ def _handle_update(update: dict) -> None:
         _accept_text(message)
         return
     file_path = _download_file(message)
-    if file_path:
-        channels.process_files([file_path])
-        _say(message["chat"]["id"], "Файл принят, заявка создана.")
+    if not file_path:
+        _say(message["chat"]["id"], _text_about_files())
+        return
+    try:
+        created = channels.process_files([file_path])
+    except Exception:  # noqa: BLE001 — битый файл: без ложного «заявка создана»
+        created = 0
+    if created:
+        _say(message["chat"]["id"], f"Файл принят, заявка создана (номер {created}).")
     else:
         _say(message["chat"]["id"], _text_about_files())
 
@@ -95,15 +105,21 @@ def _download_file(message: dict) -> str:
         file_id = message["document"]["file_id"]
     if not file_id:
         return ""
-    info = requests.get(
-        method_url("getFile"), params={"file_id": file_id}
-    ).json()
-    file_api_path = info.get("result", {}).get("file_path", "")
-    if not file_api_path:
+    # Таймаут обязателен: зависший запрос навсегда стопорил бы поток канала.
+    try:
+        info = requests.get(
+            method_url("getFile"), params={"file_id": file_id}, timeout=30
+        ).json()
+        file_api_path = info.get("result", {}).get("file_path", "")
+        if not file_api_path:
+            return ""
+        data = requests.get(
+            f"{API_BASE}/file/bot{TELEGRAM_BOT_TOKEN}/{file_api_path}",
+            timeout=120,
+        )
+    except requests.RequestException as error:
+        print(f"Telegram: файл не скачался ({error})")
         return ""
-    data = requests.get(
-        f"{API_BASE}/file/bot{TELEGRAM_BOT_TOKEN}/{file_api_path}"
-    )
     stem = file_api_path.split("/")[-1] or "telegram-file"
     target = _save_bytes(stem, data.content)
     return str(target)

@@ -20,7 +20,10 @@ def process_file(path: str, channel: str = "файл",
     suffix = Path(path).suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
         return None
-    text = parse_file(path)
+    try:
+        text = parse_file(path)
+    except Exception:  # noqa: BLE001 — битый файл не должен ронять канал
+        return None
     if suffix in IMAGE_SUFFIXES and recognizer.demo_mode():
         return None  # картинки распознаются только в реальном режиме
     try:

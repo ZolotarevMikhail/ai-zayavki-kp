@@ -126,7 +126,13 @@ def send_file(peer_id: int, path: str, text: str = "") -> bool:
             timeout=60,
         )
         response.raise_for_status()
-        return True
+        # VK отвечает 200 и на ошибку ({"error": {...}}) — обманывать нельзя.
+        payload = response.json()
+        if "error" in payload:
+            print(f"VK: API вернул ошибку"
+                  f" ({payload['error'].get('error_msg', '')})")
+            return False
+        return bool(payload.get("response"))
     except requests.RequestException as error:
         print(f"VK: файл не отправился ({error})")
         return False

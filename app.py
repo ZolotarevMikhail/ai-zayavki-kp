@@ -4,10 +4,11 @@
 """
 from pathlib import Path
 
+import secrets
+import time
+
 from flask import (Flask, abort, flash, redirect, render_template, request,
                    send_file, url_for)
-
-import secrets
 
 from src import (channels, config, db, email_in, excel_out, kp_text,
                  mailer, pricing, recognizer, render_kp)
@@ -150,7 +151,12 @@ def upload():
         return redirect(url_for("index"))
 
     path = db.save_upload(file)
-    text = parse_file(path)
+    try:
+        text = parse_file(path)
+    except Exception as error:  # noqa: BLE001 — битый/неизвестный файл от человека
+        flash(f"Файл не удалось прочитать ({error})."
+              " Сохрани его в .xlsx/.docx/.pdf и попробуй снова.")
+        return redirect(url_for("index"))
     if suffix in (".png", ".jpg", ".jpeg", ".webp") and recognizer.demo_mode():
         flash("Картинки распознаются только в реальном режиме:"
               " нужен ключ ProxyAPI.")
@@ -494,6 +500,10 @@ def kp_send_email(order_id):
         flash(f"Письмо с файлами Word и Excel отправлено на {address}.")
     except Exception as error:  # noqa: BLE001 — покажем понятную причину
         flash(f"Письмо не ушло: {error}")
+        # Тема и текст — набранная оператором работа: вернём их на форму,
+        # иначе при сбое сети он набирает письмо заново.
+        return redirect(url_for("kp_doc", order_id=order_id,
+                                keep_subj=subject, keep_body=letter_text))
     return redirect(url_for("kp_doc", order_id=order_id))
 
 
@@ -507,10 +517,33 @@ def download(order_id):
     return send_file(path, as_attachment=True)
 
 
+# Лимитер публичной формы: не больше N заявок с одного адреса в час.
+# Форма без входа — иначе её можно долбить и выжигать баланс ProxyAPI
+# (каждая заявка в реальном режиме = платный вызов ИИ).
+RATE_MAX, RATE_WINDOW = 10, 3600
+_rate_hits = {}
+
+
+def _too_fast() -> bool:
+    """True — с этого адреса заявок за час уже RATE_MAX."""
+    ip = request.remote_addr or "неизвестно"
+    now = time.time()
+    fresh = [t for t in _rate_hits.get(ip, []) if now - t < RATE_WINDOW]
+    if len(fresh) >= RATE_MAX:
+        _rate_hits[ip] = fresh
+        return True
+    _rate_hits[ip] = fresh + [now]
+    return False
+
+
 @app.route("/new", methods=["GET", "POST"])
 def site_form():
     """Публичная форма заявки для вставки на сайт компании."""
     if request.method == "POST":
+        if _too_fast():
+            flash("Слишком много заявок с одного адреса."
+                  " Напишите нам на почту или позвоните.")
+            return redirect(url_for("site_form"))
         text = _form_text(request.form)
         if not text:
             flash("Опишите заявку текстом: что нужно сделать.")
@@ -550,7 +583,13 @@ def api_new_order():
     if not text:
         return {"error": "Пустое поле text"}, 400
     contact = str(data.get("contact", "")).strip()
-    order_id = channels.process_text("API сайта", text, contact_value=contact)
+    try:
+        order_id = channels.process_text(
+            "API сайта", text, contact_value=contact
+        )
+    except RuntimeError as error:
+        # Внешний сайт ждёт JSON, не страницу 500.
+        return {"error": str(error)}, 502
     return {"order_id": order_id}, 201
 
 

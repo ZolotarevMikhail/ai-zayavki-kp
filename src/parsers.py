@@ -7,9 +7,11 @@ from docx import Document
 from openpyxl import load_workbook
 from pathlib import Path
 
-# Форматы, которые система принимает на вход
+# Форматы, которые система принимает на вход.
+# .xls (старый формат) не принимаем: openpyxl его не читает —
+# честно просим сохранить в .xlsx, а не падать на половине пути.
 ALLOWED_SUFFIXES = {
-    ".txt", ".pdf", ".xlsx", ".xls",
+    ".txt", ".pdf", ".xlsx",
     ".docx", ".png", ".jpg", ".jpeg", ".webp",
 }
 
